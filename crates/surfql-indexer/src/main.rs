@@ -152,3 +152,7 @@ impl Indexer {
         });
     }
 }
+
+fn main() {
+    println!("Hello World!");
+}

@@ -15,6 +15,9 @@ pub enum Error {
 
     #[from]
     Typespec(#[serde_as(as = "DisplayFromStr")] typespec::Error),
+
+    #[from]
+    Amqprs(#[serde_as(as = "DisplayFromStr")] amqprs::error::Error),
 }
 
 impl std::fmt::Display for Error {

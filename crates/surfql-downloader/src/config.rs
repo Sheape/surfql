@@ -17,15 +17,27 @@ pub fn load_config() -> &'static Config {
 #[allow(non_snake_case)]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Config {
+    pub AZURE_TENANT_ID: String,
+    pub AZURE_CLIENT_ID: String,
+    pub AZURE_CLIENT_SECRET: String,
     pub STORAGE_ACCOUNT_ENDPOINT: String,
     pub STORAGE_CONTAINER: String,
+    pub QUEUE_NAME: String,
+    pub RABBITMQ_CONNECTION_STRING: String,
+    pub BASE_URL: String,
 }
 
 impl Config {
     fn from_env() -> Result<Self> {
         Ok(Self {
+            AZURE_TENANT_ID: get_env("AZURE_TENANT_ID")?,
+            AZURE_CLIENT_ID: get_env("AZURE_CLIENT_ID")?,
+            AZURE_CLIENT_SECRET: get_env("AZURE_CLIENT_SECRET")?,
             STORAGE_ACCOUNT_ENDPOINT: get_env("STORAGE_ACCOUNT_ENDPOINT")?,
             STORAGE_CONTAINER: get_env("STORAGE_CONTAINER")?,
+            QUEUE_NAME: get_env("QUEUE_NAME")?,
+            RABBITMQ_CONNECTION_STRING: get_env("RABBITMQ_CONNECTION_STRING")?,
+            BASE_URL: get_env_opt("BASE_URL", "https://data.commoncrawl.org"),
         })
     }
 }

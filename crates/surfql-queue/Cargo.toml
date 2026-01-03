@@ -1,0 +1,14 @@
+[package]
+name = "surfql-queue"
+edition.workspace = true
+version.workspace = true
+authors.workspace = true
+
+[dependencies]
+surfql-core = { path = "../surfql-core", features = ["rabbitmq"] }
+amqprs = { version = "2.1.3", features = ["tokio-rustls", "urispec", "tls"] }
+tokio.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

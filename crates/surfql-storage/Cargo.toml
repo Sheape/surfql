@@ -1,0 +1,23 @@
+[package]
+name = "surfql-storage"
+edition.workspace = true
+version.workspace = true
+authors.workspace = true
+
+[dependencies]
+surfql-core = { path = "../surfql-core", features = ["azure-storage"] }
+surfql-telemetry = { path = "../surfql-telemetry", optional = true }
+azure_core.workspace = true
+azure_identity.workspace = true
+azure_storage_blob.workspace = true
+futures.workspace = true
+thiserror.workspace = true
+typespec.workspace = true
+reqwest = { workspace = true, features = ["stream"] }
+
+[lints]
+workspace = true
+
+[features]
+default = ["telemetry"]
+telemetry = ["dep:surfql-telemetry"]

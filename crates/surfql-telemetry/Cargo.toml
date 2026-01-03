@@ -1,0 +1,17 @@
+[package]
+name = "surfql-telemetry"
+edition.workspace = true
+version.workspace = true
+authors.workspace = true
+
+[dependencies]
+surfql-core = { path = "../surfql-core", features = ["telemetry"] }
+tracing-subscriber = { version = "0.3.22", features = ["env-filter", "chrono", "fmt", "std"] }
+opentelemetry = "0.31.0"
+opentelemetry-otlp = { version = "0.31.0", default-features = false, features = ["grpc-tonic", "reqwest-rustls",
+    "metrics", "logs", "internal-logs", "tls"] }
+opentelemetry_sdk = "0.31.0"
+opentelemetry-appender-tracing = "0.31.1"
+
+[lints]
+workspace = true

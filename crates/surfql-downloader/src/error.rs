@@ -1,29 +1,29 @@
-use derive_more::From;
-use serde::Serialize;
-use serde_with::{DisplayFromStr, serde_as};
+use reqwest::Error as ReqwestError;
+use std::io::Error as IOError;
+use surfql_queue::Error as QueueError;
+use surfql_storage::Error as StorageError;
+use thiserror::Error;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[serde_as]
-#[derive(Debug, From, Serialize)]
-#[serde(tag = "type", content = "data")]
+#[derive(Error, Debug)]
 pub enum Error {
-    ConfigMissingEnv(&'static str),
+    #[error("Cannot initialize message queue: {0}")]
+    MessageQueueInitFailed(#[from] QueueError),
 
-    #[from]
-    Reqwest(#[serde_as(as = "DisplayFromStr")] reqwest::Error),
+    #[error("Storage failed: {0}")]
+    StorageError(#[from] StorageError),
 
-    #[from]
-    Typespec(#[serde_as(as = "DisplayFromStr")] typespec::Error),
+    #[error("Request failed: {0}")]
+    Reqwest(#[from] ReqwestError),
 
-    #[from]
-    Amqprs(#[serde_as(as = "DisplayFromStr")] amqprs::error::Error),
+    #[error("Invalid URL format: {url}")]
+    InvalidURLFormat { url: String },
+
+    #[error("Invalid file input: {filepath}: {source}")]
+    InvalidFileInput {
+        filepath: String,
+        #[source]
+        source: IOError,
+    },
 }
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> core::result::Result<(), core::fmt::Error> {
-        write!(f, "{self:?}")
-    }
-}
-
-impl std::error::Error for Error {}

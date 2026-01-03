@@ -1,79 +1,37 @@
-use std::time::Duration;
+use std::{fs, path::Path};
 
-use amqprs::{
-    BasicProperties, DELIVERY_MODE_PERSISTENT,
-    callbacks::{DefaultChannelCallback, DefaultConnectionCallback},
-    channel::{BasicPublishArguments, Channel, ConfirmSelectArguments, QueueDeclareArguments},
-    connection::{Connection, OpenConnectionArguments},
-};
-use indicatif::{ProgressBar, ProgressStyle};
-use tokio::time::sleep;
+use surfql_queue::MessageQueue;
 
-use crate::{Result, config::load_config};
+use crate::{Error, Result};
 
 pub struct Seeder {
-    pub connection: Connection,
-    pub channel: Channel,
+    message_queue: MessageQueue,
 }
 
 impl Seeder {
-    pub async fn new() -> Result<Self> {
-        let config = load_config();
-        let args: OpenConnectionArguments =
-            config.RABBITMQ_CONNECTION_STRING.as_str().try_into()?;
-        let connection = Connection::open(&args).await?;
-        connection
-            .register_callback(DefaultConnectionCallback)
-            .await?;
-
-        let channel = connection.open_channel(None).await?;
-        channel.register_callback(DefaultChannelCallback).await?;
-
-        let queue_arg = QueueDeclareArguments::new(&config.QUEUE_NAME)
-            .durable(true)
-            .finish();
-        channel.queue_declare(queue_arg).await?;
-        channel
-            .confirm_select(ConfirmSelectArguments::new(true))
-            .await?;
-
-        Ok(Self {
-            channel,
-            connection,
-        })
+    pub async fn new(queue_name: impl Into<String>) -> Result<Self> {
+        let message_queue = MessageQueue::new(queue_name).await?;
+        Ok(Self { message_queue })
     }
 
-    pub async fn publish_paths(&self) -> Result<()> {
-        let warc_paths = include_str!("../../../samples/warc.paths");
-        let pb = ProgressBar::new(warc_paths.lines().count() as u64);
-        let config = load_config();
-        pb.set_style(ProgressStyle::with_template(
-                "{msg}: {spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} ({eta})"
-            ).unwrap().progress_chars("██░"));
+    pub async fn seed_from_file(&self, filepath: String) -> Result<()> {
+        let path = Path::new(&filepath);
+        let contents = fs::read_to_string(path).map_err(|err| Error::InvalidFileInput {
+            filepath,
+            source: err,
+        })?;
 
-        for path in warc_paths.lines() {
-            pb.set_message(format!("Seeding: ...{}", &path[path.len() - 20..]));
-            let props = BasicProperties::default()
-                .with_delivery_mode(DELIVERY_MODE_PERSISTENT)
-                .with_content_type("text/plain")
-                .finish();
-            let content = Vec::from(path.as_bytes());
-            let publish_args = BasicPublishArguments::new("", &config.QUEUE_NAME);
-
-            self.channel
-                .basic_publish(props, content, publish_args)
+        for path in contents.lines() {
+            // PERF: Optimize this to use static bytes only and not Vec<u8>
+            self.message_queue
+                .publish_persistent(None, path.as_bytes().to_vec())
                 .await?;
-
-            pb.inc(1);
         }
-        pb.finish_with_message("Done!");
 
         Ok(())
     }
 
-    pub async fn close_rabbitmq_channel_connection(self) -> Result<()> {
-        sleep(Duration::from_secs(2)).await;
-        self.channel.close().await?;
-        Ok(self.connection.close().await?)
+    pub async fn done(self) -> Result<()> {
+        Ok(self.message_queue.close_connection().await?)
     }
 }

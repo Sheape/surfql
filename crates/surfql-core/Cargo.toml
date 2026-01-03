@@ -1,0 +1,20 @@
+[package]
+name = "surfql-core"
+edition.workspace = true
+version.workspace = true
+authors.workspace = true
+
+[dependencies]
+dotenv.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = []
+azure = []
+azure-storage = ["azure"]
+rabbitmq = []
+telemetry = []
